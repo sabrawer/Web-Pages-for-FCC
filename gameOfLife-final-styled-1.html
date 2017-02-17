@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet"  type = "text/css"  href="css/gameoflife.css">
+<link rel="stylesheet" type="text/css"
+          href="https://fonts.googleapis.com/css?family=Roboto:Thin,Medium,Medium italic,Black"  >
+
+
+</head>
+
+<body onload = "go()" >
+	<!-- class dummy is used to get mouse clicks on background,to close menus -->
+	<div class="dummy" onClick="bodyClick()"></div>
+
+	<div class="header" onClick = "bodyClick()">Game of Life</div>
+	<div id = "tick" class="txck" onclick = "tickClick()">tick</div>
+	<div id = "reset" class="reset" onclick = "resetClick()">reset</div>
+	<div id = "irun" class = "run" onclick = "runClick()" >run</div>
+	<div id = "patternButton" class="pattern" onclick = "patternClick()">pattern &gt;</div>
+	<div id = "patternRoot"></div>
+	<div id = "pause" class="paus" onclick = "pauseClick()">pause</div>
+	<div class="spdlbl">speed(=>run)</div>
+	<div id = "speedButton" class="spd"  onclick = "speedClick()">speed &gt;</div>
+	<div id = "speedRoot"></div>
+	<div id = "storageButton" class="storg" onClick = "storageClick()">storage &gt;</div>
+	<div id = "storageRoot"></div>
+	<div id = "textInputRoot"></div>
+	<div id = "deletePatternRoot"></div>
+
+	<div id = "root" class="line"></div>
+
+	<!-- onClicks below are to get clicks from these div areas -->
+	<p class="manual" onClick="bodyClick()">User's Manual</p>
+	<p class="manualNote" onClick="bodyClick()">If loading gets stuck, clicking in iframe or screen refresh may help</p>
+
+	<iframe src="game of life manual.pdf"></iframe>
+
+
+
+
+<script type="text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+<script type="text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
+
+<script>
+
+/*
+The user manual, which is on the application window, has a complete explanation of how
+this appication works from the user point of view.
+
+This application has 7 buttons arranged in a line above the graph. Three of these show drop
+down menus, and the "storage" button selection "save as pattern" brings up its own screen
+which is a TextInputScreen, and the "delete pattern"
+selection brings up a drop-down. The problem is to get all these menus to work correctly 
+together. In particular, if a drop-down menu is visible, we want the following:
+
+-- When a click occurs in any area not a button, the visible menu should disappear, with no selection.
+--No two drop-downs should be visible at the same time.
+-- When a button is clicked, which may or may not bring up its own drop-down menu,
+	any drop-down already visible, should disappear.
+-- When the TextInputScreen is visible, no other button should be clickable, and no drop-down
+	menu should become visible.
+
+This is all handled as a big hack - it is the most confusing and most unstructured part
+of this application. See the following methods (also see which HTML elements have
+onClick = bodyClick()):
+
+	bodyClick() global function
+	bodyClick() method of class Game.
+	method shutDownUnless(obj) in class DropDown.
+	method showMenu() in class DropDown
+
+All these work together to make sure the menus and buttons are coordinated.
+
+This should be much more structured, with the layers working together and mouse clicks
+propagating through the layers. Someday.....
+
+class Game is the key class here - it is both Model and Controller, and also has some
+View properties in showing and taking down pop-ups. The other classes are for
+View, except for the CircularList, which is part of the Model.
+	
+*/
+
+/* ******************************************************
+
+			GLOBALS
+
+***********************************************************  */
+
+
+const CE = React.createElement;
+const DIM = 62; // graph has dimension DIM-2.
+let game; //a global pinting to the unique instance of class Game.
+
+function go(){
+	game = new Game();
+	game.go();
+}
+
+//===================================  callbacks from buttons and from background clicks
+
+function tickClick(){
+	//console.log("tickclick");
+	game.step(true);
+}
+
+
+function resetClick(){
+	//console.log("resetclick");
+	game.reset();
+}
+
+function runClick(){
+	game.run();
+}
+
+function patternClick(){
+	//console.log("patternClick");
+	game.showPatternMenu();
+}
+
+function pauseClick(){
+	game.pause();
+}
+
+function speedClick(){
+	game.showSpeedMenu();
+}
+
+function bodyClick(){
+	//console.log("bodyClick");
+	game.bodyClick();
+}
+
+function storageClick(){
+	game.showStorageMenu();
+}
+
+
+//=============================callbacks from save and cancel buttons
+//					of TextInputScreen
+				
+function doSave(){
+	//console.log("doSave");
+	game.textInputScreen.save(); // hack hack hack
+}
+
+function doCancel(){
+	//console.log("doCancel")
+	game.textInputScreen.cancel(); // hack hack hack
+}
+
+//================================  functions for localStorage
+
+// key MUST be string
+function storeLocal(key, obj){
+	localStorage.setItem(key, JSON.stringify(obj) );
+}
+
+function getFromLocalStorage(key){
+	let x = localStorage[key];
+	if(! x) return;
+	return JSON.parse(x);
+}
+
+function removeFromLocalStorage(key){
+	console.log("removeFromLocalStorage: " + key);
+	let x = localStorage[key];
+	if(! x) {
+		console.log("key not in local storage");
+		return;
+	};
+	localStorage.removeItem(key);
+}
+
+	
+
+/* ******************************************************
+
+			REACT CLASSES
+
+***********************************************************  */
+
+//===================================================  TextInputScreenReact
+
+/* Not a reusable class. This class is specific to this application */
+
+class TextInputScreenReact extends React.Component{
+	constructor(props){
+		super(props);
+		//console.log("TextInputScreenReact");
+		//console.log(props);
+	
+	};
+
+	render(){
+		//console.log("TextInputScreenReact-render");
+		let cep = CE("pre",{style: {position:" absolute", 
+					top: "10px",left: "85px"}},this.props.text);
+		return CE("div",{className: "WidgetSteveDropDownContainer",
+				style: {width: this.props.width, left:this.props.left,
+					height: "200px",
+					display: this.props.display,
+					border: "2px solid red",
+					boxShadow: "0 0 3px 6px hsla(0,0%,60%,.7)" } },
+			cep, this.props.saveb, this.props.cancelb, this.props.texte);
+				
+		
+	};
+
+}; //class TextInputScreenReact
+
+//===================================================  TextInputReact
+
+/* REUSABLE. This class should allow  you to put a text input box anywhere. Note the
+CSS styling. It uses the oridnary HTML input window. You can turn off the blue
+border that arrives by default when the element gets focus by doing
+
+.className:focus{
+	....
+	outline: 0;
+}
+At least this works on Safari. Some people claim "outline: none" is also OK, but
+this did not work for me on Safari.
+*/
+
+class TextInputReact extends React.Component{
+	constructor(props){
+		super(props);
+		//console.log("TextInputReact");
+		//console.log(props);
+		this.keyUp = this.keyUp.bind(this);
+	}
+
+	keyUp(event){
+		event.persist();
+		if(event.key == "Enter") return doSave();
+	};
+
+	render(){
+		return CE("input",{	className: this.props.className,
+				    	onKeyUp: this.keyUp,
+					id: this.props.id,
+					type: "text",
+					maxLength: "15",
+					placeholder: this.props.prompt,
+					style:{top:this.props.top,left:this.props.left,
+					width: this.props.width, height: "15px",
+					textAlign: "left"
+					} },null);
+	};
+}; //class TextInputReact
+		
+
+//===================================================  ButtonReact	
+/*
+REUSABLE class for a button. However, for some reason, when passed a callback in
+the form {    callback: this.someFunction  } where "this" refers to a non-React
+class instance (in this case class Button instance) and which here becomes props.callback,
+and you do in render(): {   onClick: this.props.callback ....}
+the callback is invoked when the class loads, and is not invoked on a click.
+So it does not work correctly.
+
+I don't know why this happens - perhaps it has to do with so much indirection
+in using this class. Anyway, my hack workaround is to call a global function.
+This element has the callback added in class TextInputScreen, where the callback
+is to a global function (ie, props.callback refers to a global function). I use a 
+different function for each button, and there are no arguments.
+*/	
+
+class ButtonReact extends React.Component{
+	constructor(props){
+		super(props);
+	};
+
+
+	/* Calling back to this object does not work - the function fires
+	as soon as the object loads. Must call out to a global function,
+	whichis passed as props.callback.*/
+
+	render(){
+		return CE("div",{className:this.props.className,
+				  onClick: this.props.callback,
+				  style:{top: this.props.top,
+					  left: this.props.left,
+					  width: this.props.width } }, this.props.text);
+	};
+}; //class ButtonReact
+
+//===================================================  DropDownMenuReact
+
+/*
+A reusable class, works in conjunction with class DropDown, and seems to
+work very well.
+
+*/
+		
+
+class DropDownMenuReact extends React.Component{
+	constructor(props){
+		super(props);
+		this.patternClick = this.patternClick.bind(this);
+		this.choices = props.choices;
+		this.owner = props.owner;
+	};
+
+	patternClick(event){
+		event.persist();
+		let arr = event.target.id.split(":");
+		let selNum = Number(arr[1]);
+		this.owner.choiceSelected(this.choices[selNum]);
+	};
+
+	render(){
+		let dropArray = [];
+		for(let i=0;i<this.props.choices.length;i++){
+			let text = this.props.choices[i];
+			let id = this.props.keyIdPrefix +  ":" + i;
+			let top = (15*i) + "px";
+			let key = "keyIdPrefix" + "Key" + i;
+			let left = "10px";
+			let bord =  "1px solid black";
+			let elem = CE("div",{  id: id, key: key,
+						className: this.props.cellsClass,
+						onClick: this.patternClick,
+						style: {top: top,left: left,
+						         display: this.props.display} 
+					      }, 
+					text);
+			dropArray.push(elem);
+		} //for	
+		return CE("div",{className: this.props.containerClass,
+					style: {display:this.props.display } }, dropArray);
+	};
+
+
+}; // DropDownMenuReact
+
+
+//===================================================  Row
+
+/*
+see class Graph below.
+*/
+
+class Row extends React.Component{
+	constructor(props){
+		super(props);	
+		this.colors=["white","black"];	
+		this.cellClick = this.cellClick.bind(this);
+	}
+
+	cellClick(event){
+		bodyClick();
+		if(this.props.game.isRunning()){
+			window.alert("still running - press reset or pause to stop");
+		};
+		event.persist();
+		let yx = event.target.id.split(":");
+		this.props.game.toggle(Number(yx[1]),Number(yx[0]) );
+		this.props.game.update();
+	};
+		
+
+	render(){
+		let cellArray = new Array(DIM-2);
+		let tp = this.props.top;
+		for(let i=1;i<=DIM-2;i++){
+			let lft = (10*i) + "px";
+			cellArray[i] = CE("div",{ 
+					className: "cell",
+					onClick: this.cellClick,
+					id: this.props.rowNum+":"+i,
+					style:{ left: lft,
+					backgroundColor: this.colors[ 
+						this.props.cellVals[this.props.rowNum][i] ]},
+						
+						key: "cellKey" + i}, null);
+		}
+
+		return CE("div",{className: "row", style:{top:tp} },cellArray);
+	};
+}; 
+
+//===================================================  Graph
+
+/*
+This class creates the graph seen in theUI. It creates all the rows, and
+the subdivision of the rows into cells is done in class Row abover.
+*/
+
+class Graph extends React.Component{
+	constructor(props){
+		super(props);
+	};
+
+	render(){
+		let rowArray = [];
+		for(let i=1;i<=DIM-2;i++){
+			let tp = ((i-1)*10) + "px";
+			let row = CE(Row, { className: "row",
+							top: tp,
+							key: "line" + i ,
+							rowNum: i,
+							cellVals: this.props.cellVals,
+							game:this.props.game,
+							}, null);
+			rowArray.push(row);
+		} // for
+		return CE("div",null, rowArray);
+		
+	} // render		
+}; // class Graph
+
+
+
+
+/* ******************************************************
+
+			class CircularList
+
+***********************************************************  */
+
+/*
+This implements a FIFO list which appears to be circular. Ojects added to
+the list are stored in an array using array.push().You get
+elements of the list by calling the get() method. This returns the
+element of the array this.list pointed to by the marker. When doing
+a sequence of gets, the marker returns the element it is "on", then moves
+to the next element (at a smaller array index). When the marker becomes
+negative it starts at the top of the array (at the largest index),
+hence the name CircularList. 
+When the add() method is called, it resets the marker to the
+largest index.
+
+This is used both for the "save list" and the "run list" of the
+application.
+
+*/
+
+class CircularList{
+	constructor(size){
+		this.size = size;
+		this.marker=0;
+		this.list = [];
+	};
+
+	add(obj){
+		this.list.push(obj);
+		if(this.list.length >= this.size){
+			this.list.shift();
+		};
+		this.marker = this.list.length-1;
+	};
+
+	get(){
+		if(this.list.length === 0) return null;
+		let obj = this.list[this.marker];
+		this.marker--;
+		if(this.marker< 0)this.marker = this.list.length-1;
+		return obj;
+
+	};
+
+	clear(){
+		this.list = [];
+		this.marker = 0;
+	};
+}; // class CircularList
+
+
+
+/* ******************************************************
+
+			class TextInputScreen
+
+***********************************************************  */
+
+/*
+saveButton, cancelButton, textInputElement are instances of
+javascript classes (NOT React classes). This class will add
+top, left, width, callback, so they are not necessary.
+*/
+
+class TextInputScreen{
+	constructor(game, text, prompt, className, callback,  left, width,
+			saveButton, cancelButton, textInputElement){
+		this.gotString = this.gotString.bind(this);
+		this.save = this.save.bind(this);
+		this.cancel = this.cancel.bind(this);
+		this.showScreen = this.showScreen.bind(this);
+		this.setup = this.setup.bind(this);
+		this.getReactElement = this.getReactElement.bind(this);
+		this.game = game;
+		this.isShowing = false;
+		
+
+		this.prompt = prompt;
+		this.text = text;
+		this.className = className;
+		this.callback = callback;
+		this.left = left;
+		this.width = width;
+		this.saveButton = saveButton;
+		this.cancelButton = cancelButton;
+		this.textInputElement = textInputElement;
+		//console.log(prompt);
+		//console.log(width);
+		this.setup();
+		
+	};
+
+	setup(){
+		let btop = "150px";
+		let bwidth = "45px";
+		let left = 100;
+		
+		this.saveButton.top = btop;
+		this.saveButton.width = bwidth;
+		this.saveButton.left = left + "px";
+		this.saveButton.callback = doSave; // hack hack hack
+
+		this.cancelButton.top = btop;
+		this.cancelButton.width = bwidth;
+		this.cancelButton.left = (left + 70) + "px";
+		this.cancelButton.callback = doCancel; // hack hackl hack
+
+		this.textInputElement.top = "100px"
+		this.textInputElement.width = "100px";
+		this.textInputElement.left =left + "px";
+		this.textInputElement.callback = this.gotString;
+		this.textInputElement.prompt = this.prompt;
+
+	};
+
+		
+	gotString(str){
+		this.callback = callback(str);
+	};
+
+	save(){
+		let elem = document.getElementById( this.textInputElement.id );
+		if(elem === null) return;
+		let value = elem.value;
+		elem.value="";
+		this.callback(value);
+	};
+
+	cancel(){
+		//console.log("cancel");
+		this.showScreen(false);
+	}
+
+	getReactElement(dspl){
+			return CE(TextInputScreenReact,{className:"className",callback: this.gotString,
+				text: this.text,owner: this,
+				 left: this.left,width: this.width, display: dspl,
+			saveb: this.saveButton.getReactElement(),
+			cancelb: this.cancelButton.getReactElement(),
+			texte: this.textInputElement.getReactElement()},null );
+	};
+
+	showScreen(show = true){
+		this.isShowing = show;
+		let dspl = "block";
+		if(! show) dspl = "none";
+		let elem = this.getReactElement(dspl);
+		ReactDOM.render(elem, document.getElementById("textInputRoot") );
+	};
+		
+
+	
+
+}; // class TextInputScreen
+				
+
+
+
+/* ******************************************************
+
+			class TextInputElement
+
+***********************************************************  */
+
+class TextInputElement{
+	constructor(id, inputClassName, prompt="name", callback=null, top=null, left=null, width=null){
+		this.gotText = this.gotText.bind(this);
+		this.getReactElement = this.getReactElement.bind(this);
+		
+
+		this.prompt = prompt;
+		this.className = inputClassName;
+		this.callback = callback;
+		this.top = top;
+		this.left = left;
+		this.width = width;
+		this.id = id;
+
+	};
+
+	gotText(str){
+		this.callback(str);
+	};
+
+	
+
+	getReactElement(){
+		return CE(TextInputReact,{className: this.className, id: this.id, 
+				callback: this.gotText,
+				prompt: this.prompt, top: this.top, left: this.left,
+				width: this.width},null);
+	};
+};
+
+
+
+/* ******************************************************
+
+			class Button
+
+***********************************************************  */
+
+/*
+top, left, width must be number with "px" at end, ex "20px".
+
+"type" is used for callbacks, which don't seem to act correctly when
+callback is passded as pointer to a function.
+*/
+
+class Button{
+	constructor(text, buttonClassName,keyId,type, callback=null, top=null, 
+			left=null, width=null){
+		this.buttonClicked = this.buttonClicked.bind(this);
+		this.getReactElement = this.getReactElement.bind(this);
+
+		this.className = buttonClassName;
+		this.keyId = keyId;
+		this.callback = callback;
+		this.text = text;
+		this.top = top;
+		this.width = width;
+		this.left = left;
+	};
+
+	getReactElement(){
+		return CE(ButtonReact,{callback: this.buttonClicked,
+					className: this.className, key:this.keyId,
+					top: this.top, left: this.left, 
+					width: this.width, text: this.text}, null);
+	};
+
+	buttonClicked(){
+		this.callback();
+	};
+
+}; // class Button
+		
+
+/* ******************************************************
+
+			class DropDown
+
+***********************************************************  */
+
+/* The buttonId is id of associated button object which
+brings up the drop-down menu when clicked. It
+need not be defined. If  it is defined, then the
+text on the button is replaced by the list selection (only if
+there is one).*/
+
+class DropDown{
+	constructor(game, choiceArray, rootId, containerClass, cellsClass, keyIdPrefix,
+				callback, buttonId){
+		this.game = game;
+		this.choices = choiceArray;
+		this.rootId = rootId;
+		this.containerClass = containerClass;
+		this.cellsClass = cellsClass;
+		this.keyIdPrefix = keyIdPrefix;
+		this.rootElem = document.getElementById(this.rootId);
+		this.callback = callback;
+		this.buttonId = buttonId;
+	};
+
+	shutDownUnless(obj){
+		if(obj !== this) this.showMenu(false);
+	}
+
+	showMenu(show = true){
+		if(show) this.game.bodyClick(this);
+		let dspl = "block";
+		if(! show) dspl = "none";
+		
+		let drop = CE(DropDownMenuReact,{ 
+					containerClass: this.containerClass,
+					cellsClass: this.cellsClass,
+					keyIdPrefix: this.keyIdPrefix,
+					choices: this.choices,
+					owner: this,
+					display: dspl}, null);
+		ReactDOM.render(drop,this.rootElem);
+	};
+
+	choiceSelected(pattern){
+		this.callback(pattern);
+	};
+
+	relabelButtonWith(str){
+		if(! this.buttonId) return;
+		document.getElementById(this.buttonId).textContent=str;
+	};
+
+	addChoice(str){
+		this.choices.push(str);
+		this.showMenu(false);
+	}
+
+	numberOfChoices(){
+		return this.choices.length;
+	};
+
+	removeChoice(str){
+		let indx = this.choices.indexOf(str);
+		if(indx < 0) return;
+		this.choices.splice(indx, 1);
+	}
+
+}; // class DropDown
+
+
+
+
+
+
+/* ******************************************************
+
+			class Game
+
+***********************************************************  */
+
+/*
+This class runs the Game of Life algorithm.
+
+class Game is a combination of Model and Controller. It also controls
+when menus appear and disappear, but the great bulk of View is in other
+classes, React classes and in CSS.
+
+A "pattern" is a set of light and dark squares on the graph. There are
+several ways of storing a pattern. The most common is the "rows"
+double array. 
+
+rows is the 2-d array [row#][col#] for point(x=col#,y=row#). y increases going down,
+x to the right. Values between 1 and DIM-2, but the arrays are defined
+on 0,DIM-1 inclusive to simplify iteration when running the game.
+
+The method "computeNumbers()" computes the pattern at step+1 from the pattern
+at step. It uses the "rows" array and the setLD array. This method is
+invoked in the run() method, which loops over and over and the designated \speed.
+
+There are two other pattern storage formats. The built-in patterns, which
+appear as the first elements of the patterns drop-down (except for the
+random which is calculated on the fly) are stored as in method createCorePatterns().
+
+The user-defined patterns, which are stored in localStorage, are computed in
+method getCurrentPatternForList(). The format is [ [a,b], [c,d],...], where 
+each pair a,b and c,d ..... are the row and column values for the dark points only.
+This is stored in localStorage as a string.
+
+ALL METHODS LABELED CALLBACK FROM BUTTONS ARE IN FACT INVOKED BY GLOBAL FUNCTIONS.
+*/
+
+class Game{
+	constructor(){
+		/* Must bind callbacks to this */
+		this.patternSelected = this.patternSelected.bind(this);
+		this.speedSelected = this.speedSelected.bind(this);
+		this.storageSelected = this.storageSelected.bind(this);
+		this.patternStorageString = this.patternStorageString.bind(this);
+		this.deleteUserPattern = this.deleteUserPattern.bind(this);
+
+		this.rootElem = document.getElementById("root");
+		this.rows = new Array(DIM); // 0th element, DIM-1st element not used
+		this.numbers = new Array(DIM);
+		this.cells = new Array(DIM);
+		for(let i=0;i<=DIM-1;i++){
+			this.numbers[i] = new Array(DIM);
+			this.cells[i] = new Array(DIM);
+			for(let j=0;j<=DIM-1;j++){
+				this.numbers[i][j]=0;
+				this.cells[i][j] = 0;
+			}
+		}
+		// Here are the rules of the Game of Life entirely. This is used in running, as
+		// it avoids conditionals.
+		this.setLD = [ [0,0,0,1,0,0,0,0,0,0,0],
+				[0,0,1,1,0,0,0,0,0,0,0]
+			      ];
+
+		this.colors=["white","black"];
+
+		this.patterns = {}; // preset patterns, such as toad. 
+				     // These are CORE patterns
+
+		this.intrvl; // value returned by setInterval, used in run() method
+
+		this.patternDropDown;
+		this.maxNumUserPatterns = 30;
+		this.speedDropDown;
+		this.speeds;
+		this.defaultButtonString;
+		
+		this.storageDropDown;
+		this.saveList = new CircularList(30); 
+		this.runList = new CircularList(50);
+		this.textInputScreen;
+
+		/* The following is an array of all the names of patterns
+		which the user has created and stored. The core pattern names
+		are not in this list. DO NOT MODIFY OR DELETE*/
+		this.storageNamesKey = "GameOfLifeUserPatterns"; 
+		this.storageNamesArray; 
+
+		this.setup();
+		this.setUpLocalStore();
+		this.createCorePatterns();
+		this.setUpMenus();
+
+		this.deleteDropDown; // temporary
+		
+	};
+
+	go(){
+		this.render();
+	};
+
+	reset(rend = true){
+		//console.log("***********  RESET");
+		if(this.textInputScreen.isShowing) return;
+		this.bodyClick();
+		if(this.isRunning())this.stop();
+		this.selectedSpeed = this.speeds[this.defaultButtonString];
+		this.speedDropDown.relabelButtonWith(this.defaultButtonString);
+
+		this.setup();
+		if(rend) this.render();
+	};
+
+	render(){
+		ReactDOM.render(CE(Graph,{game: this, cellVals: this.rows},null), this.rootElem);
+	};
+
+	// hard-code initial configuration
+	setup(){
+		for(let i=0;i<=DIM-1;i++){
+			let arr = new Array(DIM);
+			for(let j=0;j<=DIM-1;j++) arr[j] = 0;
+			this.rows[i] = arr;
+		};
+	};
+
+	setUpLocalStore(){
+		let tem = getFromLocalStorage(this.storageNamesKey);
+		if(! tem){
+			this.storageNamesArray = [];
+			storeLocal(this.storageNamesKey, this.storageNamesArray);
+		}else{
+			this.storageNamesArray = tem;
+		}
+	};
+
+	/* values are x,y
+	*/
+	createCorePatterns(){
+		// [ cols for row 0] [cols for row 1] ... ]
+		this.patterns.blinker = {start: [30,30],rows: [ [1,2,3] ]};
+		this.patterns.toad = {start: [30,30], rows: [ [2,3,4] ,[1,2,3] ]};
+		this.patterns.glider = {start: [5,5] ,rows: [ [1,3], [2,3], [2] ] };
+		this.patterns.Rpentomino = {start: [30,30], rows: [ [3,4],[2,3],[3] ] };
+		this.patterns.acorn = {start:[30,30], rows:[ [3],[5],[2,3,5,6,7] ] };
+		this.patterns.flower = {start:[30,30],rows:[ [9],[8,10],[7,8,11],[6,8,11,12],
+						[5,8,11,13], [4,5,8,11,13,14],[3,5,8,11,13,15],
+						[2,5,8,11,13,16] ] };	
+	};
+
+	setUpMenus(){
+		this.setUpPatternDropDown();
+		this.setUpSpeedDropDown();
+		this.setUpStorageDropDown();
+		this.setUpTextInputScreen();
+	}
+
+	isCorePattern(str){
+		let x = this.patterns.hasOwnProperty(str);
+		let y = str.search("random") >= 0;
+		return (x || y);
+	};
+
+	isUserPattern(str){
+		return this.storageNamesArray.includes(str);
+	}
+		
+	// callback from the tick button
+	step(stopRun = false){
+		if(this.textInputScreen.isShowing) return;
+		if(stopRun)this.bodyClick();
+		if( stopRun && this.isRunning() ){
+			this.stop();
+		}
+		this.computeNumbers();
+		this.update();
+	};
+
+
+	update(){
+		this.render();
+	};
+		
+
+	computeNumbers(){
+		let found = false;
+		for(let i = 1; i <= DIM-2;i++){
+			for(let j = 1;j <= DIM-2;j++){
+				let sum=0;
+				for(let k = i-1;k<=i+1;k++){
+					for(let m=j-1;m<=j+1;m++){
+						if( (k==i)&&(m==j))continue;
+						sum += this.rows[k][m];
+					}
+				}
+				//console.log(sum);
+				if(sum !== 0) found = true;
+				this.numbers[i][j] = this.setLD[ this.rows[i][j] ][ sum ];
+			}
+		}
+		if( ! found){
+			this.stop();
+			return;
+		}
+		//this.rows = this.numbers;
+		for(let i=0;i<=DIM-1;i++){
+			for(let j=0;j<=DIM-1;j++){
+				this.rows[i][j] = this.numbers[i][j];
+				this.numbers[i][j]= 0;
+			}
+		}
+			
+	};
+
+	stop(){
+		if(this.isRunning()){
+			clearInterval(this.intrvl);
+			this.intrvl = undefined;
+		}
+	};
+
+	toggle(x,y){
+		if(this.rows[y][x] === 0)
+			this.rows[y][x] = 1;
+		else
+			this.rows[y][x] = 0;
+		return this.rows[y][x];
+	};
+
+	// this runs the game.
+	run(){
+		if(this.textInputScreen.isShowing) return;
+		this.bodyClick();
+		if(this.isRunning()) this.stop(); // get new speed if any
+		this.runList.add(this.getCurrentPatternForList());
+		let what = this;
+		this.intrvl = setInterval(function(){
+			what.step();},what.selectedSpeed );
+	};
+
+	/* Don't show pattern menu if the text input menu is visible.*/
+	showPatternMenu(){
+		if(this.textInputScreen.isShowing) return;
+		this.patternDropDown.showMenu(true);
+
+	};
+
+	/* Don't show speed menu if the text input menu is visible.*/
+	showSpeedMenu(){
+		if(this.textInputScreen.isShowing) return;
+		this.speedDropDown.showMenu(true);
+	}
+
+	/* Don't show storage menu if the text input menu is visible.*/
+	showStorageMenu(){
+		if(this.isRunning()){
+			window.alert("Running - cannot access storage");
+			return;
+		}
+		if(this.textInputScreen.isShowing) return;
+		this.storageDropDown.showMenu(true);
+	};
+
+	showTextInputScreen(){
+		this.textInputScreen.showScreen(true);
+	};
+		
+
+	// callback from pattern drop down
+	patternSelected(pattern){
+		this.patternDropDown.showMenu(false);
+		this.showPattern(pattern);
+	};
+
+	// callback from speed drop down
+	speedSelected(str){
+		this.speedDropDown.showMenu(false);
+		this.speedDropDown.relabelButtonWith(str);
+		this.selectedSpeed = this.speeds[str];
+	};
+
+	/* callback. str is name of a pattern to store in local storage*/
+	patternStorageString(str){
+		console.log("patternStorageString:  " + str);
+		if(str.length === 0){
+			window.alert("bad pattern name");
+			return;
+		}
+		str = str.toLowerCase();
+		this.textInputScreen.showScreen(false);
+		if( (this.isCorePattern(str) ) || (this.isUserPattern(str)) ){
+			window.alert("pattern name: " + str + " already in use. Use a different name");
+			return;
+		}
+
+		let arr = this.getCurrentPatternForList();
+		storeLocal(str, arr);
+		this.patternDropDown.addChoice(str);
+		this.storageNamesArray.push(str);
+		storeLocal(this.storageNamesKey, this.storageNamesArray);
+		console.log(this.storageNamesArray);
+	};
+
+
+	// callback from the storage drop-down.
+
+	storageSelected(str){
+		//console.log("storage selected:---" + str + "---");
+		this.storageDropDown.showMenu(false);
+		if(str == "save to list"){
+			this.saveList.add(this.getCurrentPatternForList());
+			//console.log(this.saveList);
+			return;
+		}	
+		if(str == "get from list"){
+			//console.log(str);
+			let arr = this.saveList.get();
+			//console.log(arr);
+			if(arr === null) return;
+			this.createPatternFromListPattern(arr);
+			return;
+		}
+		if(str == "clear list"){
+			this.saveList.clear();
+			return;
+		}
+		if(str == "get from run"){
+			let arr = this.runList.get();
+			if(arr === null) return;
+			this.createPatternFromListPattern(arr);
+			return;
+		}
+		if(str == "clear run"){
+			this.runList.clear();
+			return;
+		}
+		if(str == "save as pattern"){
+			if(this.patternDropDown.numberOfChoices() > this.maxNumUserPatterns){
+				window.alert("cannot save pattern - storage filled. Delete some patterns");
+				return;
+			}			
+			this.showTextInputScreen();
+			return;
+		}
+		if(str == "delete pattern"){
+			this.deleteDropDown = this.setUpPatternDeleteDropDown();	
+			if(this.deleteDropDown === null){
+				window.alert("no patterns to delete");
+				return;
+			}
+			this.deleteDropDown.showMenu(true);
+			return;
+		}
+
+		if(str == "clear Patterns"){
+			this.clearAllUserPatterns();
+			return;
+		}
+
+	};
+
+	// delete a particular user pattern.
+	deleteUserPattern(str){
+		//console.log("deleteUserPattern: " + str);
+		this.deleteDropDown.showMenu(false);
+		this.deleteDropDown = null;
+		if( (! str) ||(! this.isUserPattern(str)) ){
+			window.alert("cannot delete: " + str);	
+			return;
+		}
+		let indx = this.storageNamesArray.indexOf(str);
+		if(indx < 0) {
+			window.alert("ERROR*******  no such pattern: " + str);
+			return;
+		}
+		this.storageNamesArray.splice(indx, 1);
+		this.patternDropDown.removeChoice(str);
+		removeFromLocalStorage(str);
+		storeLocal(this.storageNamesKey, this.storageNamesArray);
+		
+	};
+
+	// delete all user patterns in local storage
+
+	clearAllUserPatterns(){
+		for(let i=0;i<this.storageNamesArray.length;i++){
+			this.patternDropDown.removeChoice(this.storageNamesArray[i]);
+		};
+		localStorage.clear();
+		this.setUpLocalStore();
+	};
+		
+
+	// create a user pattern from the points currently on the graph
+	// tnis is the pattern that will be stringified and stored in localStorage
+
+	getCurrentPatternForList(){
+		let arr = [];
+		for(let i=1;i<=DIM-2;i++){
+			for(let j=1;j<=DIM-2;j++){
+				if(this.rows[i][j] === 1) arr.push([i,j]);
+			}
+		}
+		return arr;
+
+	};
+
+	/* arr is an array read from localStorage. This is for a user-defined
+	pattern. This method creates a rows[][] array from this pattern. */
+
+	createPatternFromListPattern(arr){
+		this.setup();
+		for(let k=0;k<arr.length;k++){
+			let point = arr[k];
+			this.rows[point[0]][point[1]] = 1;
+		}
+		this.render();
+	};
+
+	/* put the user pattern in the graph, erasing all existing points. */
+	showUserPattern(str){
+		let arr = getFromLocalStorage(str);
+		if(! arr){
+			console.log("*********** ERROR - NO SUCH USER PATTERN: " + str);
+			return;
+		}
+		this.createPatternFromListPattern(arr);
+	};
+
+
+	// Show a CORE pattern (not random1,...)
+	showPattern(pattern){
+		//console.log("showpattern: " + pattern);
+		//console.log(this.patterns);
+		if(this.isUserPattern(pattern)) return this.showUserPattern(pattern);
+		this.reset(false);
+		if(pattern.search("random") >= 0)return this.genRandom(pattern);
+		let pat = this.patterns[pattern];
+		let colNum = pat.start[0];
+		let rowNum = pat.start[1];
+		let rows = pat.rows;
+		for(let i = 0;i<rows.length;i++){
+			let cols = rows[i];
+			for(let j=0;j<cols.length;j++){
+				this.rows[rowNum+i][colNum+cols[j]] = 1;
+			}
+		}
+		this.render();
+	};
+
+	pause(){
+		if(this.textInputScreen.isShowing) return;
+		this.bodyClick();
+		this.stop();
+	};
+
+	// generate and put on graph a random p[attern
+	genRandom(pattern){
+		let x;
+		if(pattern == "random1") x = .15;
+		if(pattern == "random2") x = .2;
+		if(pattern == "random3") x = .25;
+		if(pattern == "random4") x = .3;
+
+		for(let i=3;i<=58;i++){
+			for(let j=3;j<=58;j++){
+				if(Math.random() > x)continue;
+				this.rows[i][j] = 1;
+			}
+		}
+		this.render();
+	};
+
+	
+	// return true if the game is running, false otherwise.
+	isRunning(){
+		return (this.intrvl !== undefined);
+	};
+
+//=======================  The methods below create the various drop-down menus and the
+//				text input screen..
+
+	setUpPatternDropDown(){
+		let rootId = "patternRoot";
+		let containerClass = "WidgetSteveDropDownPatContainer";
+		let cellsClass = "WidgetSteveDropDownPatCells";
+		let choices = ["blinker","toad","glider","Rpentomino","acorn","flower",
+				"random1","random2","random3","random4"].concat(this.storageNamesArray);
+		let keyIdPrefix = "ptrn";
+		this.patternDropDown = new DropDown(this,choices,rootId, containerClass,
+						cellsClass, keyIdPrefix, this.patternSelected);
+	};
+
+	setUpSpeedDropDown(){
+		let rootId = "speedRoot";
+		let containerClass = "WidgetSteveDropDownSpdContainer";
+		let cellsClass = "WidgetSteveDropDownSpdCells";
+		let choices = ["very slow", "less slow","faster","fastest"];
+		this.speeds = {"very slow": 500, "less slow": 250,
+					"faster": 200, "fastest": 175};
+		let keyIdPrefix = "spd";
+		let callback = this.speedSelected;
+		let buttonId = "speedButton";
+
+		this.speedDropDown = new DropDown(this,choices,rootId,containerClass,
+						cellsClass,keyIdPrefix, callback,buttonId);
+		
+		this.defaultButtonString = "very slow";
+		this.selectedSpeed = this.speeds[this.defaultButtonString];
+		let str = this.defaultButtonString;
+		this.speedDropDown.relabelButtonWith(str);
+	};
+
+	setUpStorageDropDown(){
+		let rootId = "storageRoot";
+		let containerClass = "WidgetSteveDropDownStrgContainer";
+		let cellsClass = "WidgetSteveDropDownStrgCells";
+		let choices = ["save to list","get from list", "clear list", "get from run", "clear run",
+					"save as pattern", "delete pattern", "clear Patterns"];
+		let keyIdPrefix = "strg";
+		this.storageDropDown = new DropDown(this,choices,rootId, containerClass,
+						cellsClass, keyIdPrefix, this.storageSelected);
+
+	};
+
+	setUpPatternDeleteDropDown(){
+		if(this.storageNamesArray.length === 0){
+			window.alert("No user-named patterns");
+			return null;
+		}
+		let rootId = "deletePatternRoot";
+		let containerClass = "WidgetSteveDropDownStrgContainer";
+		let cellsClass = "WidgetSteveDropDownStrgCells";
+		let choices = Array.from(this.storageNamesArray);//make sure original array is
+								   // not modified
+		let keyIdPrefix = "strgDel";
+		return new DropDown(this,choices,rootId, containerClass,
+						cellsClass, keyIdPrefix, this.deleteUserPattern);
+	}
+
+	setUpTextInputScreen(){
+		let saveButton = new Button("save", "WidgetSteveButton","savebutton");
+		let cancelButton = new Button("cancel","WidgetSteveButton","cancelbutton");
+		let textElement = new TextInputElement("textstuff", "WidgetSteveTextInput");
+
+		let text = "Enter pattern name.\nMax 15 characters.\nName saved as LC.\nCR or save when done";
+		let prompt = "pattern-1";
+		let left = "100px";
+		let width = "300px";
+		//let height = "300px";
+		this.textInputScreen = new TextInputScreen(this, text, prompt,
+						"WidgetSteveDropDownContainer",this.patternStorageString,
+						left, width, saveButton, cancelButton,textElement
+						);				
+	};
+
+
+	//=======================  the method for collkapsing all drop-downs, mostly in
+	// response to clicks in the background.
+
+	bodyClick(obj=null){
+		this.patternDropDown.shutDownUnless(obj);
+		this.speedDropDown.shutDownUnless(obj);
+		this.storageDropDown.shutDownUnless(obj);
+		if(this.deleteDropDown) this.deleteDropDown.shutDownUnless(obj);
+	};
+		
+
+}; // Game	
+			
+		
+
+	
+		
+
+
+
+</script>
+
+</body>
+
+</html>
