@@ -51,11 +51,11 @@ xhttp.onreadystatechange = function() {
 	
     if (this.readyState == 4 && this.status == 200) {
 	let str = xhttp.responseText;
-	str1 = parse(str);
-       document.getElementById("write").value = str1;
+	//str1 = parse(str);
+       document.getElementById("write").value = str;
     }
 };
-xhttp.open("GET", "https://github.com/sabrawer/Documentation/blob/master/temp.txt", true);
+xhttp.open("GET", "temp.txt", true);
 
 
 xhttp.send();
