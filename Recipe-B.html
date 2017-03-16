@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<style>
+
+.banner{
+	text-align: center;
+	padding-top: 30px;
+	padding-bottom: 30px;
+	font-size: 25px;
+	background-color: hsl(40,100%,70%);
+	color: black;
+	width:auto;
+	height: auto;
+	max-width: 700px;
+	border: 1px solid black;
+}
+
+.buttonStyle{
+	-webkit-user-select: none;
+	
+  	z-index: 100;
+  	color: black;
+	background-color: hsl(60,100%,90%);
+	text-align: center;
+	border: 1px solid black;
+	border-radius: 5px;
+	box-shadow: 2px 2px 6px 3px hsla(0,0%,60%,1);
+	/* Hoffset Voffset radius spread color incl opacity 
+	box-shadow: inset ........  */
+	padding-left: 6px;
+	padding-right: 6px;
+	/*padding-top: 2px;*/
+	padding-bottom: 1px;
+}
+
+.buttonStyle:hover{
+	color: red;
+	cursor: pointer;
+}
+
+.buttonStyle:active{
+	box-shadow: none;
+	/*border: 2px solid black;*/
+	background-color: hsl(240,60%,90%);
+	color: hsla(0,30%,50%,1);
+}
+
+/*  individual button container */
+.container{
+	/*border: 1px solid red;*/
+	background-color: hsl(240,70%,85%);
+	padding-top: 20px;	
+	padding-bottom: 20px;
+	z-index: 100;
+}
+
+.dropDownContainer{
+	border: 1px solid black;
+	background-color: orange;
+	padding: 6px;
+	z-index: 2000;
+}
+
+.cellClass{
+	/*border: 1px solid green;*/
+	background-color: orange;
+	color: black;
+	padding: 4px;
+}
+
+.cellClass:hover{
+	background-color: blue;
+	color: white;
+	cursor: pointer;
+}
+
+.buttonBar{
+	display: flex;
+	border: 1px solid black;
+	background-color: hsl(240,60%,90%);
+	max-width:  700px;
+	align-items: center;
+	width: auto;
+}
+
+.recipeLineClass{
+	background-color: yellow;
+	color: black;
+	border: 1px solid black;
+	text-align: center;
+	padding: 5px;
+	max-width: 690px;
+	z-index: 500;
+}
+
+.recipeLineClass:hover{
+	cursor: pointer;
+	background-color: orange;
+	color: white;
+}
+
+.recipeScreenContainerClass{
+	background-color: pink;
+	border: 1px solid black;
+	box-sizing: border-box;
+	z-index: 1500;
+}
+
+.recipeTitleElementClass{
+	background-color: pink;
+	text-align: center;
+}
+
+.recipeTextGeneralClass{
+	background-color: white;
+	cols: 100;
+	color: black;
+	margin: 10px;
+	box-sizing: border-box;
+	outline: 0;
+	max-length: 300;
+}
+
+.recipeIngredientsClass {
+	
+}
+
+.recipeCommentsClass{
+
+}
+
+.recipeKeywordsClass{
+
+}
+
+.recipeNameClass{
+	text-align: left;
+	outline: 0;
+}
+
+.recipeSimpleMenuClass{
+	background-color: pink;
+	padding-top: 10px;
+}
+
+
+.recipeSimpleMenuClass1{
+}
+
+.recipeSimpleMenuClass1:hover{
+	cursor: pointer;
+	color: red;
+}
+
+.recipePhotoClass{
+	padding: 10px;
+	border: 1px solid black;
+	box-sizing: border-box;
+	margin-left: 10px;
+	margin-right: 2px;
+}
+
+.recipeLinkClass{
+}
+
+/*This is the class for a pop-up absolutely positioned.
+This positions and styles the pop up container.
+It assumes message and buttons only. Override for
+different height.*/
+
+.popupGeneralContainer{
+	background-color: white;
+	border: 3px solid orange;
+	padding: 10px;	
+	z-index: 2500;
+	color: black;
+	position: absolute;
+	top: 20px;
+	left: 20px;
+	width: 280px;
+	height: auto;
+}
+
+.popupGeneralMessageClass{
+	background-color: white;
+	color: black;
+	font-size: 12px;
+	padding-bottom: 10px;
+}
+
+.popupSelectKeywordsMessage{
+	background-color: white;
+	color: red;
+	text-align: center;
+	font-size:15px;
+	padding-bottom: 15px;
+}
+
+.popupSelectKeywordsMessage:hover{
+	background-color: blue;
+	color: white;
+	cursor: pointer;
+}
+
+
+
+.popupSingleButtonContainerClass{
+	padding-left: 20px;
+	padding-top:20px;
+	display: flex;
+}
+
+.pupupSeveralButtonsContainerClass{
+	display: flex;
+	padding-top: 15px;
+	text-align: left;
+
+}
+.buttonOneOfOneLeft{
+	position: absolute;
+	left: 200px;
+}
+
+.buttonOneOfTwoLeft{
+	position: absolute;
+	left: 155px;
+}
+
+.buttonOneOfThreeLeft{
+	position: absolute;
+	left: 100px;
+}
+
+.popupListLeft{
+	position: absolute;
+	left: 10px;
+}
+
+.popupListRight{
+	position: absolute;
+	left: 150px;
+	display: inline-block;
+}
+
+.popupKeywordsTitle{
+	text-align: center;
+	width: 50%;
+	display: inline-block;
+	padding-top: 10px;
+	font-size: 15px;
+}
+
+.popupBookTextareaClass{
+	outline: 0;
+	cols: 100;
+	rows: 2;
+	background-color: white;
+	color: black;
+	margin: 10px;
+	box-sizing: border-box;
+	font-size: 10px; /* textareas have larger fonts */
+	width: 240px;
+	max-width: 240px;
+	max-height: 40px;
+}
+
+.popupPhotoTextareaClass{
+	outline: 0;
+	cols: 100;
+	rows: 6;
+	background-color: white;
+	color: black;
+	margin: 10px;
+	box-sizing: border-box;
+	font-size: 10px; /* textareas have larger fonts */
+	width: 240px;
+	max-width: 240px;
+	height: 80px;
+	max-height: 80px;
+}
+
+
+.popupKeywordsList{
+	text-align: center;
+	border: 1px solid black;
+	width: 47%;
+	margin-right: 6px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	display: inline-block;
+	font-size: 12px;
+	color: black;
+	background-color: white;
+}
+
+.popupKeywordsListSelected{
+	text-align: center;
+	border: 1px solid black;
+	width: 47%;
+	margin-right: 6px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	display: inline-block;
+	font-size: 12px;
+	color: white;
+	background-color: red;
+}
+
+.popupKeywordsList:hover{
+	cursor: pointer;
+	background-color:blue;
+	color: white;
+
+}
+
+.popupKeywordsListSelected:hover{
+	cursor: pointer;
+
+}
+	
+
+.popupBooksList{
+	text-align: center;
+	border: 1px solid black;
+	width: 100%;
+	margin-right: 6px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	display: inline-block;
+	font-size: 12px;
+	color: black;
+	background-color: white;
+}
+
+.popupBooksListSelected{
+	text-align: center;
+	border: 1px solid black;
+	width: 100%;
+	margin-right: 6px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	display: inline-block;
+	font-size: 12px;
+	color: white;
+	background-color: red;
+}
+
+.popupBooksListNoSelect{
+	text-align: center;
+	/* border: 1px solid black; */
+	width: 100%;
+	margin-right: 6px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	display: inline-block;
+	font-size: 12px;
+	color: blue;
+	background-color: white;
+}
+		
+
+.popupBooksList:hover{
+	cursor: pointer;
+	background-color:blue;
+	color: white;
+
+}
+
+.popupBooksListSelected:hover{
+	cursor: pointer;
+
+}
+	
+
+
+</style>
+
+</head>
+
+<body>
+<div id = "drop1"></div>
+<div id = "drop"></div>
+<div id = "popup"></div>
+<div id = "write1"></div>
+<div id = "write2"></div>
+
+
+<script type="text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+<script type="text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
+
+<script src = "jsFiles/ClassRecipe.js"></script>
+<script src = "jsFiles/recipeGlobalConstants.js"></script>
+<script src = "jsFiles/localStorageClasses.js"></script>
+<script src = "jsFiles/globalVarsFunctionsTop.js"></script>
+<script src = "jsFiles/UIGeneralSuperclasses.js"></script>
+<script src = "jsFiles/utilityAndPositioningClasses.js"></script>
+<script src = "jsFiles/UIClasses.js"></script>
+<script src = "jsFiles/RecipeClasses.js"></script>
+<script src = "jsFiles/resetToOriginal.js"></script>
+<script src = "jsFiles/helpText.js"></script>
+
+<script src = "jsFiles/globalVarsFunctionsBottom.js"></script>
+
+<script>
+
+class Controller extends AbstractNotifications{
+	constructor(){
+
+		super();
+
+		this.selected = this.selected.bind(this);
+		this.newMenuChoice = this.newMenuChoice.bind(this);
+		this.manageMenuChoice = this.manageMenuChoice.bind(this);
+		this.backgroundClick = this.backgroundClick.bind(this);
+		this.addNewBook = this.addNewBook.bind(this);
+		this.displayMenuChoice = this.displayMenuChoice.bind(this);
+		this.helpMenuChoice = this.helpMenuChoice.bind(this);
+		this.bookDoneCallback = this.bookDoneCallback.bind(this);
+		this.addNewBook = this.addNewBook.bind(this);
+		this.cancelThisAction = this.cancelThisAction.bind(this);
+		this.search = this.search.bind(this);
+		this.resetRecipes = this.resetRecipes.bind(this);
+
+		this.root = document.getElementById("write1");
+		
+		this.lineController;
+		this.buttonBarController;
+
+		// used with popups
+		this.bookCallback = null;
+		this.buttonsArray = null;
+		this.messageObject = null;
+		this.textObject = null;
+		this.listObject = null;
+		this.secondTextObject = null;
+		this.secondMessageObject = null;
+
+		this.popup = null;
+		
+		this.database = new RecipeStoreLocal();
+		this.recipesArray = this.database.allRecipes(); 
+		this.banner = null;
+		this.previousType = null; // for sendNotification
+
+		this.setup();
+	};
+
+	/*{
+	label: aString,
+	choices: array of choices for a drop-down menu.
+	text: aString, which appears on the button
+	callback: a callback to the controller, generally with the
+			choice made.
+	classNames: aString - space-delineated names of the classes used for styling and positioning
+		of the button. One of them must declare "position: absolute". These names
+		may be the same for all buttons, but of course it is always possible
+		to style the buttons individually.
+	id: aString - the actual id of the button.
+	idPrefix: aString - Used ONLY if id is null. In that case
+		the id is this string and a number automatically generated.
+	keyPrefix: aString - the prefix from which a key is generated by appending a
+			unique number. This can be the same for each button.
+	}
+*/
+	setup(){
+		let arr = [];
+		let obj={label: "buttonNew", choices:
+				["new text recipe", "new book recipe","new photo(s) recipe",
+								"new link recipe"],
+				 text: "new", callback: this.newMenuChoice,
+				 id: null, 
+				 classNames: "buttonStyle buttonAbsolutePosition"};
+		arr.push(obj);
+
+		obj={label: "buttonManage", choices:["add book", "reset to original"], 
+				text: "manage", callback: this.manageMenuChoice,
+				id: null, idPrefix: "buttonId",
+				classNames: "buttonStyle buttonAbsolutePosition",
+				keyPrefix: "buttonKey"};
+		arr.push(obj);
+
+		obj={label: "buttonDisplay", 
+		     choices:[ "all", "search", "all book recipes",
+				"all photo recipes", "all link recipes", "all text recipes"],
+		text: "display", callback: this.displayMenuChoice,
+		id: null, 
+		classNames: "buttonStyle buttonAbsolutePosition"};
+		arr.push(obj);
+
+		obj={label: "buttonHelp", choices:["introduction", "getting started"], 
+				text: "help", callback: this.helpMenuChoice,
+				id: null, idPrefix: "buttonId",
+				classNames: "buttonStyle buttonAbsolutePosition",
+				keyPrefix: "buttonKey"};
+		arr.push(obj);
+
+		this.createBanner();
+	
+		this.buttonBarController = new RecipeButtonBarController(this, arr);
+
+		this.lineController = 
+			new RecipeDisplayController(this, this, this, this.recipesArray); 
+	};
+
+	createBanner(){
+		let obj = {className: "banner",
+			   onClick: this.backgroundClick};
+		this.banner = CE("div", obj,"RECIPES");
+	};
+
+	revertRecipe(recipe){
+		console.log("controller-revertRecipe");
+		this.database.revertRecipe(recipe);
+	};
+
+	selected(obj, choice){
+	};
+
+	update(){
+		this.resize();
+	};
+
+	resize(sendNotif = false){
+		if(sendNotif){
+			let notif = new Notification("resize", this);
+			this.sendNotification(notif);
+		}
+
+		this.buttonBarController.resize();
+		this.lineController.resize();
+		let elemLine = this.lineController.getReactElement();
+		let elemBar = this.buttonBarController.getReactElement();
+		//console.log(elem);
+		ReactDOM.render(CE("div",{},this.banner, elemBar, elemLine) ,this.root);
+	};
+
+	sendNotification(notif){
+		
+		// resize() may send background notifications to close any
+		// open drop downs (but does not close popups).
+		// only one of these is necessary
+		if( (this.previousType == "resize")&&
+		  (notif.type == "resize") ) return;
+		console.log("top-level controller-sendNotification");
+		console.log(notif);
+		this.lineController.receiveNotification(notif);
+		this.buttonBarController.receiveNotification(notif);
+		this.previousType = notif.type;
+		
+	};
+
+	backgroundClick(){
+		console.log("top-level controller-backgroundClick");
+		let notif = new Notification("background", this);
+		this.sendNotification(notif);
+	};
+
+	allKeywords(){
+		return this.database.allKeywords()
+	};
+
+	allBooks(){
+		return this.database.allBooks();
+	};
+
+	newMenuChoice(buttonName, choice){
+		console.log("newMenuChoice: " + buttonName + "  " + choice);
+		let rec;
+		if(choice == "new text recipe"){
+			rec = getNewTextRecipe(this.database);
+		}else if (choice == "new link recipe"){
+			rec = getNewLinkRecipe(this.database);
+			rec.link = "";
+		}else if (choice == "new book recipe"){
+			rec = getNewBookRecipe(this.database);
+			rec.book = "";
+		}else if (choice == "new photo(s) recipe"){
+			rec = getNewPhotoRecipe(this.database);
+			rec.name = "AAA a very new photo recipe";
+			rec.photos = ["addPhotoLinks.tiff","addPhotoLinks-1.tiff"];
+		}else{
+			return;
+		};
+		//rec.identifier = this.database.createUniqueIdentifier();
+		console.log("**************  new recipe");
+		console.log(rec);
+		this.saveThisRecipe(rec);
+		this.lineController.insertRecipe(rec);
+	};
+
+	manageMenuChoice(buttonName, choice){
+		console.log("manageMenuChoice: " + buttonName + "  " + choice);
+		if(choice == "add book"){
+			this.createPopUp("enter book",null,null,
+						this.addNewBook);
+		}else if (choice == "reset to original"){
+			this.createPopUp("reset", null, null, this.resetRecipes);
+		}
+	};
+
+	
+
+	displayMenuChoice(buttonName, choice){
+		console.log("displayMenuChoice: " + buttonName + "  " + choice);
+		let all = this.database.allRecipes();
+		let chosen = [];
+		if(choice == "all"){
+			chosen = all;
+		} else if(choice == "all book recipes"){
+			for(let i=0;i<all.length;i++)
+				if(all[i].type == "book")
+					chosen.push(all[i]);
+		} else if (choice == "all link recipes"){
+			for(let i=0;i<all.length;i++)
+				if(all[i].type == "link")
+					chosen.push(all[i]);
+		} else if (choice == "all photo recipes"){
+			for(let i=0;i<all.length;i++)
+				if(all[i].type == "photo")
+					chosen.push(all[i]);
+		} else if (choice == "all text recipes"){
+			for(let i=0;i<all.length;i++)
+				if(all[i].type == "text")
+					chosen.push(all[i]);
+		} else if (choice == "search"){
+			return this.showSearchPopup();
+		} else{
+			return;
+		};
+			
+			
+		this.lineController = 
+		       new RecipeDisplayController(this, this, this, chosen);
+		this.update();
+	};
+
+	helpMenuChoice(buttonName, choice){
+		console.log("helpMenuChoice: " + buttonName + "  " + choice);
+		if(choice == "introduction"){
+			this.createPopUp("introduction",null,null,null);
+		}else{
+			return;
+		}
+	};
+
+//============================
+	
+	saveThisRecipe(recipe){
+		//console.log("controller-saveThisRecipe");
+		//console.log(recipe);
+		this.database.saveRecipe(recipe);
+	};
+
+	deleteThisRecipe(recipe){
+		this.database.deleteRecipe(recipe.identifier);
+
+	};
+
+
+//=============================
+
+	createPopUp(action, name, currentKeywords, callback){
+		this.textObject = null;
+		this.listObject = null;
+		this.messageObject = null;
+		this.buttonsArray = null;
+		
+
+		if(action == "enter book"){
+			
+			this.bookCallback = callback;
+			let str = "Please enter the name of one new book.  Below is the " + 
+				"list of existing books."
+				  
+			this.messageObject = {text: str,className: popupGeneralMessageClass,
+						fontSize: new UISize(popupDefaultFontSize) };
+
+			this.textObject = {	className: "popupBookTextareaClass", 
+				      		oldName: null,
+						id: "book" + newInteger()}; 
+			
+			let books = this.allBooks();
+			this.listObject = {list: books,numColumns: 1, 
+					select: false, 
+					fontSize:new UIFont(new UISize(popupDefaultFontSize)),
+					listClassName: "popupBooksListNoSelect",
+					listSelectionClassName:"popupBooksListNoSelect"
+					};
+
+
+			this.buttonsArray = [
+				{text: "done",className: "buttonStyle",
+					callback: this.bookDoneCallback,
+					fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+				},
+				{text: "cancel", className: "buttonStyle",
+				 callback: this.cancelThisAction,
+				 fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+				}
+					];
+
+		}else if (action == "reset"){
+			
+			let str = "Reset to original - ARE YOU SURE? This will " +
+				"remove all your changes!";
+				  
+			this.messageObject = {text: str,className: popupGeneralMessageClass,
+						fontSize: new UISize(popupDefaultFontSize) };
+
+			this.buttonsArray = [
+				{text: "reset",className: "buttonStyle",
+					callback: this.resetRecipes,
+					fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+				},
+				{text: "cancel", className: "buttonStyle",
+				 callback: this.cancelThisAction,
+				 fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+				}
+					];
+
+		}else if (action == "introduction"){
+			let str = getIntroductionText();
+			this.messageObject = {text: str,className: popupGeneralMessageClass,
+						fontSize: new UISize(popupDefaultFontSize),
+						tag: "pre" };
+
+			this.buttonsArray = [
+				{text: "close",className: "buttonStyle",
+					callback: this.cancelThisAction,
+					fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+				}];
+
+		}else{
+			window.alert("bad action: " + action);
+			return;
+		} // end if -- else
+
+		this.popup = new UIPopUp( null ,popupGeneralContainer,
+					   null, this.messageObject,this.textObject,
+					     this.buttonsArray, this.listObject);
+		this.popup.open();
+		let notif = new Notification("menuUp", this);
+		this.sendNotification(notif);
+	};
+
+	showSearchPopup(){ 
+		let str = "Search for recipes where at least one keyword matches a selected " +
+				"keyword and at least one word in recipe name or " +
+				"comment matches one of the words entered below."
+				  
+		this.messageObject = {text: str,className: popupGeneralMessageClass,
+						fontSize: new UISize(popupDefaultFontSize) };
+			
+			
+		this.textObject = {	className: "popupBookTextareaClass", 
+				      		oldName: null,
+						id: "text" + newInteger(),
+						key: "key" + newInteger()}; 
+
+		this.buttonsArray = [
+			{text: "search",className: "buttonStyle",
+				callback: this.search,
+				fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+			},
+			{text: "cancel", className: "buttonStyle",
+			 callback: this.cancelThisAction,
+			 fontSize: new UIFont(new UISize(popupDefaultFontSize) )
+			}
+				];
+
+		this.popup = new RecipeSearchUIPopUp(popupGeneralContainer, this, 
+				this.messageObject, this.textObject, this.buttonsArray , "drop1");
+
+		this.popup.open();
+		let notif = new Notification("menuUp", this);
+		this.sendNotification(notif);
+	};
+
+	
+	// callback from popup
+	bookDoneCallback(){
+		let id = this.textObject.id;
+		let bookName = document.getElementById(id).value;
+		if(bookName) bookName = bookName.trim();
+		if(bookName.length > 0) this.bookCallback(bookName);
+		
+		this.closePopup();
+	};
+
+	// callback from bookDoneCallback()
+	addNewBook(bookNameString){
+		console.log("addNewBook: " + bookNameString);
+		this.database.addBook(bookNameString);
+	
+	};
+
+	cancelThisAction(){
+		this.closePopup();
+		
+	};
+
+	closePopup(){
+		this.popup.close();
+		let notif = new Notification("menuDown", this);
+		this.sendNotification(notif);
+		this.popup = null;
+	};
+
+
+	// callback from search popup
+	search(){
+		//console.log("search -----------");
+		let keywordsArray = this.popup.selectedKeywordsArray;
+		//console.log(keywordsArray);
+		let id = this.textObject.id;
+		let valString = document.getElementById(id).value;
+		valString = valString.trim();
+		let tokens = this.splitString(valString);
+		tokens = tokens.concat(keywordsArray);
+		console.log(tokens);
+		this.closePopup();
+		if(tokens.length === 0){
+			return;
+		}
+		let allRecipes = this.database.allRecipes();
+		let filteredRecipes = [];
+		for(let i=0;i<allRecipes.length;i++){
+			let found = false;
+			let rec = allRecipes[i];
+			for(let k=0;k<tokens.length;k++){
+				let str = tokens[k].toLowerCase();
+				if( (rec.keywords.meals.indexOf(str) >= 0) ||
+				    (rec.keywords.foods.indexOf(str) >= 0) ||
+				    (rec.name.toLowerCase().indexOf(str) >= 0) ||
+				    (rec.comments.toLowerCase().indexOf(str) >= 0) ){
+					found = true;
+					break;
+				} // if
+			} // k
+			if(found) filteredRecipes.push(rec);
+		} // i
+		this.lineController = 
+			new RecipeDisplayController(this, this, this, filteredRecipes);
+		this.update();
+	};
+
+	splitString(str){
+		str = str.trim();
+		if(str.length === 0) return [];
+		let arr = str.split("\n");
+		let arr1 = [];
+		for(let i =0;i<arr.length;i++){
+			let str = arr[i].trim();
+			if(str.length > 2) arr1.push(str);
+		}
+		let arr2 = [];
+		for(let i=0;i<arr1.length;i++){
+			let str = arr1[i].trim();
+			let arr3 = str.split(" ");
+			for(let j=0;j<arr3.length;j++){
+				let str = arr3[j].trim();
+				if(str.length > 2) arr2.push(str);
+			} // j
+		} // i
+
+		return arr2;
+	};
+					
+	resetRecipes(){
+		console.log("resetRecipes");
+		resetToOriginal(this.database);
+		this.closePopup();
+		let recs = this.database.allRecipes();
+		this.lineController = 
+			new RecipeDisplayController(this, this, this, recs);
+		this.update();
+	};
+	
+}; //  controller
+
+
+let controller;
+function run(){
+	controller = new Controller();
+	resize();
+}
+
+function resize(){
+	controller.resize(true);
+}
+
+
+window.onresize = resize;
+window.onload = go();
+function go(){
+	console.log("go");
+	
+	CE =React.createElement;
+	CE0=CE, CE1 = CE, CE2 = CE;
+	run();
+	//controller.resize();
+
+};
+</script>
+
+</body>
+
+</html>
